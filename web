@@ -1,0 +1,162 @@
+#ifndef INDEX_HTML_H
+#define INDEX_HTML_H
+
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thiết Bị Y Tế Thông Minh</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root { --primary: #4facfe; --danger: #ff4d6d; --warning: #ffa500; --success: #14b8a6; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #4facfe, #00f2fe); min-height: 100vh; display: flex; flex-direction: column; }
+    
+    .header { text-align: center; padding: 30px 20px; color: white; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; flex: 1; width: 100%; }
+
+    /* Animation cho Card */
+    .view-section { display: none; animation: slideUp 0.4s ease; }
+    .view-active { display: block; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Dashboard */
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card { background: white; border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: 0.3s; position: relative; overflow: hidden; }
+    
+    .icon { font-size: 60px; margin-bottom: 15px; }
+    .value { font-size: 4rem; font-weight: 800; color: #1e2937; margin-bottom: 5px; }
+    .unit { font-size: 1.2rem; color: #64748b; font-weight: 600; }
+    .status-text { margin-top: 15px; font-size: 1.2rem; font-weight: bold; padding: 8px; border-radius: 10px; }
+
+    /* Lớp phủ cảnh báo (Blinking) */
+    .alert-mode { animation: pulseRed 1.5s infinite; border: 3px solid var(--danger); }
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 109, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 77, 109, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 109, 0); } }
+
+    /* Nút bấm */
+    .btn { cursor: pointer; border: none; border-radius: 50px; font-weight: bold; transition: 0.3s; padding: 12px 30px; }
+    .btn-setup { background: white; color: var(--primary); margin-top: 30px; }
+    .btn-save { background: var(--primary); color: white; width: 100%; margin-top: 15px; font-size: 1.1rem; }
+
+    /* Cấu hình */
+    .config-card { background: white; max-width: 400px; margin: 0 auto; border-radius: 20px; padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+    .form-group { margin-bottom: 15px; text-align: left; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; }
+
+    .footer { text-align: center; padding: 20px; color: white; opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>HỆ THỐNG GIÁM SÁT SỨC KHỎE</h1>
+  <p>Dữ liệu cập nhật thời gian thực từ ESP32</p>
+</div>
+
+<div class="container">
+  <div id="view-main" class="view-section view-active">
+    <div class="dashboard">
+      <div class="card" id="card-bpm">
+        <div class="icon" style="color: var(--danger);"><i class="fa-solid fa-heart-pulse"></i></div>
+        <h2>Nhịp Tim</h2>
+        <div class="value" id="bpm">--</div>
+        <div class="unit">BPM</div>
+        <div class="status-text" id="st-bpm">Đang khởi động...</div>
+      </div>
+
+      <div class="card" id="card-spo2">
+        <div class="icon" style="color: var(--success);"><i class="fa-solid fa-droplet"></i></div>
+        <h2>Nồng độ Oxy</h2>
+        <div class="value" id="spo2">--</div>
+        <div class="unit">% SpO₂</div>
+        <div class="status-text" id="st-spo2">Đang khởi động...</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px; color: white;">
+      <i class="fa-solid fa-clock"></i> Cập nhật: <span id="time">--:--:--</span>
+    </div>
+
+    <div style="text-align: center;">
+      <button class="btn btn-setup" onclick="goConfig()"><i class="fa-solid fa-cog"></i> CÀI ĐẶT HỆ THỐNG</button>
+    </div>
+  </div>
+
+  <div id="view-config" class="view-section">
+    <div class="config-card">
+      <h2 style="margin-bottom: 20px; text-align: center;">Cấu Hình Thiết Bị</h2>
+      <form action="/save" method="POST">
+        <div class="form-group"><label>WiFi SSID:</label><input type="text" name="ssid" required></div>
+        <div class="form-group"><label>Mật khẩu WiFi:</label><input type="password" name="pass" required></div>
+        <div class="form-group"><label>Số điện thoại SMS:</label><input type="tel" name="phone" placeholder="Ví dụ: 0911..." required></div>
+        <button type="submit" class="btn btn-save">LƯU & RESET MẠCH</button>
+      </form>
+      <button class="btn" style="background:none; color:#666; width:100%;" onclick="goMain()">Hủy bỏ</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Phát triển bởi Trần Quyết - Đại học Công nghiệp Hà Nội</div>
+
+<script>
+  function goConfig() {
+    document.getElementById('view-main').classList.remove('view-active');
+    document.getElementById('view-config').classList.add('view-active');
+  }
+  function goMain() {
+    document.getElementById('view-config').classList.remove('view-active');
+    document.getElementById('view-main').classList.add('view-active');
+  }
+
+  function updateData() {
+    if(!document.getElementById('view-main').classList.contains('view-active')) return;
+
+    fetch('/data').then(r => r.json()).then(d => {
+      const bpm = d.bpm;
+      const spo2 = d.spo2;
+
+      document.getElementById('bpm').innerText = bpm > 0 ? bpm : '--';
+      document.getElementById('spo2').innerText = spo2 > 0 ? spo2 : '--';
+      document.getElementById('time').innerText = new Date().toLocaleTimeString();
+
+      // Logic hiển thị Nhịp Tim
+      const cardBpm = document.getElementById('card-bpm');
+      const stBpm = document.getElementById('st-bpm');
+      if (bpm > 100) {
+        stBpm.innerText = "NGUY HIỂM: NHỊP TIM CAO";
+        stBpm.style.color = "var(--danger)";
+        cardBpm.classList.add('alert-mode');
+      } else if (bpm > 30 && bpm < 60) {
+        stBpm.innerText = "CẢNH BÁO: NHỊP TIM THẤP";
+        stBpm.style.color = "var(--warning)";
+        cardBpm.classList.remove('alert-mode');
+      } else if (bpm >= 60) {
+        stBpm.innerText = "TRẠNG THÁI: BÌNH THƯỜNG";
+        stBpm.style.color = "var(--success)";
+        cardBpm.classList.remove('alert-mode');
+      }
+
+      // Logic hiển thị SpO2
+      const cardSpo2 = document.getElementById('card-spo2');
+      const stSpo2 = document.getElementById('st-spo2');
+      if (spo2 > 0 && spo2 < 95) {
+        stSpo2.innerText = "THIẾU OXY MÁU";
+        stSpo2.style.color = "var(--danger)";
+        cardSpo2.classList.add('alert-mode');
+      } else if (spo2 >= 95) {
+        stSpo2.innerText = "CHỈ SỐ OXY TỐT";
+        stSpo2.style.color = "var(--success)";
+        cardSpo2.classList.remove('alert-mode');
+      }
+    });
+  }
+
+  setInterval(updateData, 2000);
+</script>
+</body>
+</html>
+)rawliteral";
+#endif
